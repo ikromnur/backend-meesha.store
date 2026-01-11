@@ -142,20 +142,25 @@ Masuk ke menu **DNS Zone Editor** di Hostinger, lalu tambahkan/edit record berik
 
 _Tunggu beberapa menit (atau jam) agar DNS menyebar (propagasi)._
 
-### 2. Buat Config Nginx
+### 2. Buat Config Nginx (Pisahkan Frontend & Backend)
 
-Login ke VPS, lalu buat file config:
+Agar lebih rapi dan mudah dikelola, kita akan buat 2 file konfigurasi terpisah.
+
+#### A. Config FRONTEND (meesha.store)
 
 ```bash
 nano /etc/nginx/sites-available/meesha-store
 ```
 
-Isi dengan konfigurasi berikut (sudah disesuaikan untuk `meesha.store`):
+Isi dengan (hapus isi lama jika ada):
 
 ```nginx
-# Konfigurasi FRONTEND (Port 3000) -> meesha.store
 server {
     server_name meesha.store www.meesha.store;
+
+    # Log
+    access_log /var/log/nginx/meesha-store.access.log;
+    error_log /var/log/nginx/meesha-store.error.log;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -164,12 +169,30 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
+
+        # Forward IP asli
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
+```
 
-# Konfigurasi BACKEND (Port 4000) -> api.meesha.store
+#### B. Config BACKEND (api.meesha.store)
+
+```bash
+nano /etc/nginx/sites-available/api-meesha-store
+```
+
+Isi dengan:
+
+```nginx
 server {
     server_name api.meesha.store;
+
+    # Log
+    access_log /var/log/nginx/api-meesha-store.access.log;
+    error_log /var/log/nginx/api-meesha-store.error.log;
 
     location / {
         proxy_pass http://localhost:4000;
@@ -178,6 +201,11 @@ server {
         proxy_set_header Connection 'upgrade';
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
+
+        # Forward IP asli
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
 ```
@@ -185,11 +213,12 @@ server {
 ### 3. Aktifkan & Restart Nginx
 
 ```bash
-# Hapus default config (jika ada)
+# Hapus default config
 rm /etc/nginx/sites-enabled/default
 
-# Link config baru
+# Link kedua config
 ln -s /etc/nginx/sites-available/meesha-store /etc/nginx/sites-enabled/
+ln -s /etc/nginx/sites-available/api-meesha-store /etc/nginx/sites-enabled/
 
 # Cek error & Restart
 nginx -t
