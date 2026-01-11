@@ -72,8 +72,8 @@ Backend sekarang berjalan di port **4000**.
 
 ```bash
 cd /var/www
-git clone https://github.com/ikromnur/frontend-web-meesha.git
-cd frontend-web-meesha
+git clone https://github.com/ikromnur/frontend-meesha.store.git
+cd frontend-meesha.store
 
 # Buat file .env local (jika belum ada contoh, buat baru)
 nano .env
