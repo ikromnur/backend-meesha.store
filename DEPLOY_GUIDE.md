@@ -93,9 +93,32 @@ NEXTAUTH_SECRET=rahasia_super_aman_panjang_acak
 NEXTAUTH_URL=https://domainanda.com
 ```
 
-- **PENTING**: `NEXT_PUBLIC_BACKEND_URL` harus mengarah ke URL public Backend (bukan localhost, karena diakses browser user).
+### 3. Masalah Koneksi (ERR_CONNECTION_TIMED_OUT)
 
-### 2. Jalankan Frontend
+Jika website masih tidak bisa dibuka, cek dua hal ini:
+
+#### A. Firewall Hostinger (External) - PALING KRUSIAL
+
+VPS Hostinger memiliki firewall tambahan di luar VPS (di panel dashboard website Hostinger).
+
+1.  Login ke Dashboard Hostinger.
+2.  Masuk ke menu **VPS** -> **Kelola VPS Anda**.
+3.  Cari menu **Keamanan** -> **Firewall**.
+4.  Jika ada tombol **"Reset to Default"**, klik itu.
+5.  Jika tidak, pastikan Anda menambahkan aturan (Rule) untuk membuka port:
+    - **HTTP**: Port 80
+    - **HTTPS**: Port 443
+    - **SSH**: Port 22
+
+Tanpa ini, website tidak akan bisa diakses dari luar meskipun settingan di dalam VPS sudah benar.
+
+#### B. Masalah IPv6 (DNS AAAA Record)
+
+Jika Firewall sudah oke tapi masih error, mungkin karena browser mencoba akses via IPv6.
+
+1.  Cek DNS Management domain Anda.
+2.  Hapus record tipe **AAAA**.
+3.  Pastikan Nginx sudah support IPv6 (listen [::]:80 dan [::]:443) seperti di config langkah 5.
 
 ```bash
 docker compose up -d --build
