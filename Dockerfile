@@ -18,8 +18,8 @@ RUN npm install && npm rebuild bcrypt sharp
 # Copy the rest of the application
 COPY . .
 
-# Generate Prisma Client (ensure it's fresh)
-RUN npx prisma generate
+# Generate Prisma Client (using local package)
+RUN npm run prisma:generate
 
 # Update sharp to latest to fix TS issues
 RUN npm install sharp@latest

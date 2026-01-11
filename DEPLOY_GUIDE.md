@@ -30,6 +30,11 @@ apt install -y git nginx certbot python3-certbot-nginx
 # Install Docker (Script Otomatis)
 curl -fsSL https://get.docker.com -o get-docker.sh
 sh get-docker.sh
+
+# Setup Firewall (PENTING)
+ufw allow OpenSSH
+ufw allow 'Nginx Full'
+ufw --force enable
 ```
 
 ---
@@ -100,22 +105,34 @@ Frontend sekarang berjalan di port **3000**.
 
 ---
 
-## Langkah 4: Setup Nginx (Reverse Proxy)
+## Langkah 4: Setup Domain & Nginx (Reverse Proxy)
 
-Agar bisa diakses tanpa port (misal `domainanda.com` dan `api.domainanda.com`).
+### 1. Setting DNS (Di Panel Domain Hostinger)
 
-### 1. Buat Config Nginx
+Masuk ke menu **DNS Zone Editor** di Hostinger, lalu tambahkan/edit record berikut:
+
+| Type  | Name | Content / Points to | TTL   |
+| ----- | ---- | ------------------- | ----- |
+| A     | @    | 76.13.16.97         | 14400 |
+| A     | api  | 76.13.16.97         | 14400 |
+| CNAME | www  | meesha.store        | 14400 |
+
+_Tunggu beberapa menit (atau jam) agar DNS menyebar (propagasi)._
+
+### 2. Buat Config Nginx
+
+Login ke VPS, lalu buat file config:
 
 ```bash
-nano /etc/nginx/sites-available/meesha-fullstack
+nano /etc/nginx/sites-available/meesha-store
 ```
 
-Isi dengan konfigurasi berikut (Ganti `domainanda.com` dengan domain asli Anda):
+Isi dengan konfigurasi berikut (sudah disesuaikan untuk `meesha.store`):
 
 ```nginx
-# Konfigurasi FRONTEND (Port 3000) -> domainanda.com
+# Konfigurasi FRONTEND (Port 3000) -> meesha.store
 server {
-    server_name domainanda.com www.domainanda.com;
+    server_name meesha.store www.meesha.store;
 
     location / {
         proxy_pass http://localhost:3000;
@@ -127,9 +144,9 @@ server {
     }
 }
 
-# Konfigurasi BACKEND (Port 4000) -> api.domainanda.com
+# Konfigurasi BACKEND (Port 4000) -> api.meesha.store
 server {
-    server_name api.domainanda.com;
+    server_name api.meesha.store;
 
     location / {
         proxy_pass http://localhost:4000;
@@ -142,25 +159,66 @@ server {
 }
 ```
 
-### 2. Aktifkan & Restart
+### 3. Aktifkan & Restart Nginx
 
 ```bash
-# Hapus default
+# Hapus default config (jika ada)
 rm /etc/nginx/sites-enabled/default
 
 # Link config baru
-ln -s /etc/nginx/sites-available/meesha-fullstack /etc/nginx/sites-enabled/
+ln -s /etc/nginx/sites-available/meesha-store /etc/nginx/sites-enabled/
 
-# Test & Restart
+# Cek error & Restart
 nginx -t
 systemctl restart nginx
 ```
 
-### 3. Setup SSL (HTTPS)
+### 4. Setup SSL (HTTPS) Otomatis
+
+Jalankan perintah ini untuk mendapatkan sertifikat SSL gratis dari Let's Encrypt:
 
 ```bash
-certbot --nginx -d domainanda.com -d api.domainanda.com
+certbot --nginx -d meesha.store -d www.meesha.store -d api.meesha.store
 ```
+
+_Ikuti instruksi di layar (masukkan email, setujui terms)._
+
+---
+
+## Langkah 5: Update Environment Variable (PENTING)
+
+Setelah domain dan SSL aktif (https), Anda **WAJIB** mengupdate file `.env` di kedua aplikasi agar menggunakan domain, bukan IP lagi.
+
+### 1. Update Backend
+
+```bash
+cd /var/www/backend-meesha.store
+nano .env
+```
+
+Ubah:
+
+```env
+APP_BASE_URL=https://api.meesha.store
+```
+
+Lalu restart: `docker compose up -d --build`
+
+### 2. Update Frontend
+
+```bash
+cd /var/www/frontend-meesha.store
+nano .env
+```
+
+Ubah:
+
+```env
+NEXT_PUBLIC_BACKEND_URL=https://api.meesha.store
+NEXTAUTH_URL=https://meesha.store
+```
+
+Lalu restart: `docker compose up -d --build`
 
 ---
 
