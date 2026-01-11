@@ -1,0 +1,20 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    image: meesha-backend:prod
+    container_name: meesha-backend
+    restart: always
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+    networks:
+      - meesha-net
+
+networks:
+  meesha-net:
+    driver: bridge

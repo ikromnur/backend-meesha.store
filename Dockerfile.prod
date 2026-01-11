@@ -1,0 +1,42 @@
+# Stage 1: Build
+FROM node:20 AS builder
+
+WORKDIR /app
+
+# Install build dependencies for native modules
+RUN apt-get update && apt-get install -y openssl python3 make g++
+
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# Install all dependencies (including dev for building)
+RUN npm install
+
+COPY . .
+
+# Build the application
+RUN npm run build
+
+# Stage 2: Production
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install runtime dependencies for native modules (openssl is crucial for Prisma)
+RUN apt-get update && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# Install only production dependencies
+RUN npm install --only=production
+
+# Copy built artifacts from builder
+COPY --from=builder /app/dist ./dist
+
+# Generate Prisma Client for the production environment
+RUN npx prisma generate
+
+EXPOSE 4000
+
+CMD ["node", "dist/app.js"]
