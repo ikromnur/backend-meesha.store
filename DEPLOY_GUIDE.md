@@ -93,7 +93,7 @@ NEXTAUTH_URL=https://domainanda.com
 ### 2. Jalankan Frontend
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose up -d --build
 ```
 
 Frontend sekarang berjalan di port **3000**.
